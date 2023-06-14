@@ -1,14 +1,15 @@
-*{
+* {
   margin: 0;
   padding: 0;
-  font-family: 'Montserrat', sans-serif;
+  font-family: "Montserrat", sans-serif;
 }
 
-body, html {
+body,
+html {
   overflow: hidden;
 }
 
-html{
+html {
   width: 100vw;
   height: 100vh;
 }
@@ -25,4 +26,9 @@ body::-webkit-scrollbar-track {
 body::-webkit-scrollbar-thumb {
   background: rgb(255, 255, 255, 0);
   border-radius: 6px;
+}
+
+a {
+  text-decoration: none;
+  color: initial;
 }
