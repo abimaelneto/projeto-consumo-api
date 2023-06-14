@@ -1,287 +1,205 @@
 <script>
 import climaBox from "../components/climaBox.vue";
-import loadingModel from "../components/loadingModal.vue"
+import loadingModel from "../components/loadingModal.vue";
+import Carousel from "../components/Carousel.vue";
 
 export default {
-    components: {
-        climaBox,
-        loadingModel,
+  components: {
+    climaBox,
+    loadingModel,
+    Carousel,
+  },
+  data() {
+    return {
+      search: this.$route.params.name,
+      loading: true,
+      openImgModal: false,
+      imagesList: [],
+      clima: [],
+      error: "",
+      imgError: "",
+      tempAtual: "",
+    };
+  },
+  methods: {
+    getImages(url) {
+      if (this.imagesList != "") return;
+      this.loading = true;
+
+      // Obtem foto do Google usando a API de pesquisa de imagens
+      const googleSearchApiKey = "AIzaSyBLq5cUwYO31kXPjCxhaELx_tNXv_TI-ec"; // Chave de API do Google JSON  com pesquisas de até 10 000 requisições por dia se for somente web é ilimitado
+      const customSearchEngineId = "163bf32740a0e4962"; // ID de pesquisa personalizado
+      const googleSearchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleSearchApiKey}&cx=${customSearchEngineId}&q=cidade%20de%20${url}&searchType=image`;
+
+      fetch(googleSearchUrl)
+        .then((res) => res.json())
+        .then((data) => {
+          this.imagesList = data.items.slice(1, 10).map((i) => i.link);
+        })
+        .catch((err) => {
+          this.imgError = "Algo deu errado, tente novamente mais tarde.... :(";
+          console.log("error: ", err);
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
-    data() {
-        return {
-            search: this.$route.params.name,
-            loading: true,
-            imgContent: false,
-            imageUrl: [],
-            clima: [],
-            climaCarosel: [],
-            index: 0,
-            climaError: '',
-            imgError: '',
-            tempAtual: ''
-        };
+    buildUnitString(string, unit) {
+      return `${string}${unit}`;
     },
-    methods: {
-        getImages(url) {
-            this.loading = true
-            if (this.imageUrl != '') return
+    getClima() {
+      let url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${this.search}?unitGroup=metric&key=ZNGGPXU6288M2AFT47884B8LQ&contentType=json`;
+      fetch(url)
+        .then((e) => e.json())
+        .then((data) => {
+          this.clima = data.days.slice(1, 10).map((day, index) => ({
+            index,
+            data: day.datetime.split("-").reverse().join("-"),
+            tempmin: this.buildUnitString(day.tempmin, "°"),
+            tempmax: this.buildUnitString(day.tempmax, "°"),
+            tempmedia: this.buildUnitString(day.temp, "°"),
+            nascerdosol: day.sunrise,
+            pordosol: day.sunset,
+            humidade: `${day.humidity}${"%"}`,
+            condição: day.conditions,
+            descrição: day.description,
+            precipitação: this.buildUnitString(day.precip, "mm"),
+            icon: day.icon.replaceAll("-", ""),
+          }));
 
-            // Obtem foto do Google usando a API de pesquisa de imagens
-            const googleSearchApiKey = "AIzaSyBLq5cUwYO31kXPjCxhaELx_tNXv_TI-ec"; // Chave de API do Google JSON  com pesquisas de até 10 000 requisições por dia se for somente web é ilimitado
-            const customSearchEngineId = "163bf32740a0e4962"; // ID de pesquisa personalizado
-            const googleSearchUrl = `https://www.googleapis.com/customsearch/v1?key=${googleSearchApiKey}&cx=${customSearchEngineId}&q=cidade%20de%20${url}&searchType=image`;
-
-            fetch(googleSearchUrl)
-                .then((res) => res.json())
-                .then((data) => {
-                    for (let x = 0; x < 10; x++) {
-                        this.imageUrl.push(data.items[x].link)
-                    }
-                    this.loading = false
-
-                }).catch(err => {
-                    this.imgError = "Algo deu errado, tente novamente mais tarde.... :("
-                    console.log("error: ", err)
-                    this.loading = false
-                })
-
-        },
-        getClima(a) {
-            let url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${a}?unitGroup=metric&key=ZNGGPXU6288M2AFT47884B8LQ&contentType=json`
-            fetch(url)
-                .then(e => e.json())
-                .then(data => {
-                    for (let x = 0; x < 10; x++) {
-                        this.clima.push({
-                            "index": x,
-                            "data": data.days[x].datetime.split("-").reverse().join("-"),
-                            "tempmin": data.days[x].tempmin + ("°"),
-                            "tempmax": data.days[x].tempmax + ("°"),
-                            "tempmedia": data.days[x].temp + ("°"),
-                            "nascerdosol": data.days[x].sunrise,
-                            "pordosol": data.days[x].sunset,
-                            "humidade": data.days[x].humidity + "%",
-                            "condição": data.days[x].conditions,
-                            "descrição": data.days[x].description,
-                            "precipitação": data.days[x].precip + "mm",
-                            "icon": data.days[x].icon.replaceAll("-", ""),
-
-                        })
-                    }
-
-                    for (let x = 0; x < 4; x++) {
-                        this.climaCarosel.push({
-                            "index": x,
-                            "data": data.days[x].datetime.split("-").reverse().join("."),
-                            "tempmin": data.days[x].tempmin + ("°"),
-                            "tempmax": data.days[x].tempmax + ("°"),
-                            "tempmedia": data.days[x].temp + ("°"),
-                            "nascerdosol": data.days[x].sunrise,
-                            "pordosol": data.days[x].sunset,
-                            "humidade": data.days[x].humidity + "%",
-                            "condição": data.days[x].conditions,
-                            "descrição": data.days[x].description,
-                            "precipitação": data.days[x].precip + "mm",
-                            "icon": data.days[x].icon.replaceAll("-", ""),
-                        })
-                    }
-                    this.tempAtual = data.currentConditions.temp  + ("°")
-                    this.loading = false
-                }).catch(err => {
-                    this.loading = false
-                    this.climaError = "Algo deu errado, tente novamente mais tarde.... :("
-                    console.log("erro: ", err)
-                })
-
-        },
-        indexMenos() {
-            if (this.index == 0) return
-            this.index--
-            this.climaCarosel = this.clima.slice(this.index, this.index + 4)
-        },
-        indexMais() {
-            if (this.index == 6) return
-            this.index++
-            this.climaCarosel = this.clima.slice(this.index, this.index + 4)
-        },
-        showImg() {
-            this.getImages(this.search);
-            this.imgContent = !this.imgContent
-
-        }
+          this.tempAtual = data.currentConditions.temp + "°";
+        })
+        .catch((err) => {
+          this.climaError =
+            "Algo deu errado, tente novamente mais tarde.... :(";
+          console.log("erro: ", err);
+        })
+        .finally(() => {
+          this.loading = false;
+        });
     },
-    mounted() {
-        this.getClima(this.search);
+
+    showImg() {
+      this.getImages();
+      this.openImgModal = !this.openImgModal;
     },
+  },
+  mounted() {
+    this.getClima();
+  },
 };
 </script>
 
 <template>
-    <main class="content">
-        <p class="cidade">{{ search }} - {{ tempAtual }}</p>
+  <main class="content">
+    <h2>{{ search }} - {{ tempAtual }}</h2>
 
-        <p class="error" v-if="climaError">{{ climaError }}</p>
+    <p class="error" v-if="error">{{ error }}</p>
 
-        <div class="climaBox">
-            <div @click="indexMenos" class="arrow">
-                <div class="centerArrow">&lt</div>
-            </div>
-            <div v-for="x of climaCarosel">
-                <climaBox :clima="x"/>
-            </div>
-            <div @click="indexMais" class="arrow">
-                <div class="centerArrow">></div>
-            </div>
-        </div>
+    <Carousel :items="clima" />
+    <p class="fotos" @click="showImg">Veja algumas fotos do local!</p>
+    <div class="caroselImg" v-show="openImgModal">
+      <p class="cloneBtn" @click="openImgModal = false">X</p>
+      <p class="error" v-show="imgError">{{ imgError }}</p>
+      <div v-for="img of imagesList" :key="img">
+        <img :src="img" alt="" />
+      </div>
+    </div>
 
-        <p class="fotos" @click="showImg">Veja algumas fotos do local!</p>
-        <div class="caroselImg" v-show="imgContent">
-            <p class="cloneBtn" @click="imgContent = false">X</p>
-            <p class="error" v-show="imgError">{{ imgError }}</p>
-            <div v-for="x of imageUrl">
-                <img :src="x" alt="" />
-            </div>
-        </div>
-
-        <loadingModel v-if="loading"></loadingModel>
-    </main>
+    <loadingModel v-if="loading"></loadingModel>
+  </main>
 </template>
 
 <style scoped>
 .content {
-    display: flex;
-    height: 80vh;
-    flex-direction: column;
-    align-items: center;
+  display: flex;
+  height: 80vh;
+  flex-direction: column;
+  align-items: center;
 }
 
-.cidade {
-    font-weight: 700;
-    font-size: 2rem;
-    color: rgb(51, 51, 51);
-    
-    padding-top: 20px;
-    padding-bottom: 20px;
-}
+h2 {
+  font-weight: 700;
+  font-size: 2rem;
+  color: rgb(51, 51, 51);
 
-.fotos {
-    background-color: rgba(0, 0, 0, 0.8);
-    padding: 20px;
-    border-radius: 10px;
-    color: white;
-    font-weight: 700;
-
-    cursor: pointer;
+  padding-top: 20px;
+  padding-bottom: 20px;
 }
 
 /* IMAGENS */
 .caroselImg {
-    position: fixed;
-    overflow: auto;
+  position: fixed;
+  overflow: auto;
 
-    top: 0;
-    left: 0;
+  top: 0;
+  left: 0;
 
-    z-index: 150;
-    width: 100%;
-    height: 100%;
+  z-index: 150;
+  width: 100%;
+  height: 100%;
 
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 
-    background-color: rgba(0, 0, 0, 0.8);
-
+  background-color: rgba(0, 0, 0, 0.8);
 }
 
 .caroselImg img {
-    height: 350px;
-    border-radius: 5px;
-    width: auto;
-    margin: 10px;
-
+  height: 350px;
+  border-radius: 5px;
+  width: auto;
+  margin: 10px;
 }
 
+.fotos {
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  border-radius: 10px;
+  color: white;
+  font-weight: 700;
 
-/* CLIMA */
-.climaBox {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin: auto;
-
-    width: 90vw;
-
-    cursor: pointer;
+  cursor: pointer;
 }
 
 .cloneBtn {
-    color: white;
-    background-color: rgb(255, 255, 255, 0.5);
+  color: white;
+  background-color: rgb(255, 255, 255, 0.5);
 
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
-    position: absolute;
-    margin: 20px;
-    top: 0;
-    right: 0;
+  position: absolute;
+  margin: 20px;
+  top: 0;
+  right: 0;
 
-    width: 50px;
-    height: 50px;
-    border-radius: 50px;
-    font-weight: 700;
+  width: 50px;
+  height: 50px;
+  border-radius: 50px;
+  font-weight: 700;
 
-    transition: 0.4s;
-    
+  transition: 0.4s;
 }
-
 
 .cloneBtn:hover {
-    opacity: 0.7;
+  opacity: 0.7;
 }
 
-.arrow {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 
-    margin: 10px;
-    width: 50px;
-}
+  background-color: lightcoral;
+  color: white;
 
-.centerArrow {
-    box-shadow: 8px 8px 24px #c5c5c5, -8px -8px 24px #fbfbfb;
-    background: rgb(255, 255, 255, 0.2);
-
-    border-radius: 10px;
-    padding: 10px;
-
-    font-weight: 700;
-    font-size: 30px;
-    transition: 0.2s;
-
-    user-select: none;
-}
-
-.centerArrow:hover {
-    background-color: rgb(245, 245, 245);
-}
-
-.error{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-
-    background-color: lightcoral;
-    color: white;
-    
-    font-weight: 700;
-    border-radius: 10px;
-    width: 350px;
-    height: 100px;
+  font-weight: 700;
+  border-radius: 10px;
+  width: 350px;
+  height: 100px;
 }
 </style>
