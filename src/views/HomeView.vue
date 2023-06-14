@@ -1,49 +1,40 @@
 <script>
-import search from "../components/search.vue";
+import City from "../components/City.vue";
 
 export default {
   components: {
-    search,
+    City,
   },
   data() {
     return {
       cidades: [],
       filteredCidades: [],
       filtro: "",
-      mostarbox: false,
     };
   },
   methods: {
     getIbgeData() {
       fetch("https://servicodados.ibge.gov.br/api/v1/localidades/municipios")
-        .then((e) => e.json())
-        .then((e) => {
-          for (let x in e) {
-            this.cidades.push({
-              nome: e[x].nome,
-              estado: e[x].microrregiao.mesorregiao.UF.nome,
-              UF: e[x].microrregiao.mesorregiao.UF.sigla,
-            });
-          }
+        .then((res) => res.json())
+        .then((data) => {
+          this.cidades = data.map((city) => ({
+            nome: city.nome,
+            estado: city.microrregiao.mesorregiao.UF.nome,
+            UF: city.microrregiao.mesorregiao.UF.sigla,
+          }));
         })
         .catch((err) => {
           console.log("error: ", err);
         });
     },
-    handleFilter() {
-      if (this.filtro.length <= 2) {
-        this.filteredCidades = [];
-        this.mostarbox = false;
-        return;
-      }
+  },
+  computed: {
+    filteredCidades() {
+      if (this.filtro.length <= 2) return [];
 
-      this.mostarbox = true;
-      this.filteredCidades = this.cidades.filter((e) => {
-        return e.nome.toLowerCase().includes(this.filtro.toLowerCase());
+      return this.cidades.filter((c) => {
+        return c.nome.toLowerCase().includes(this.filtro.toLowerCase());
       });
-    },
-    handleClickDetail(e) {
-      this.$router.push(`/detalhe/${e.target.id}`);
     },
   },
   mounted() {
@@ -55,17 +46,23 @@ export default {
 <template>
   <div class="container">
     <div id="imagens">
-      <img id="logo" src="../logos/AttemptICONazul.png" />
-      <img id="text" src="../logos/AttemptTEXTO(2).png" />
+      <img id="logo" src="../logos/attempt-icon.png" />
+      <img id="text" src="../logos/attempt-text.png" />
     </div>
 
-    <input type="text" v-model="filtro" @keyup="handleFilter" placeholder="Busque por uma cidade do Brasil..." />
+    <input
+      type="text"
+      v-model="filtro"
+      placeholder="Busque por uma cidade do Brasil..."
+    />
 
     <br />
 
-    <div class="boxFilter" v-show="mostarbox">
-      <div v-for="x of filteredCidades">
-        <search @click="handleClickDetail" :filteredCidades="x" />
+    <div class="boxFilter" v-show="filteredCidades.length">
+      <div v-for="city of filteredCidades" :key="city">
+        <RouterLink :to="`/detalhe/${city.nome}`">
+          <City :city="city" />
+        </RouterLink>
       </div>
     </div>
   </div>
@@ -79,15 +76,12 @@ export default {
   align-items: center;
   text-align: center;
 
-  background: linear-gradient(360deg,
-      #002d72 0%,
-      #0055d9 100%);
+  background: linear-gradient(360deg, #002d72 0%, #0055d9 100%);
 
   width: 100%;
   height: 100%;
 
   padding-top: 100px;
-
 }
 
 #imagens {
@@ -101,7 +95,6 @@ export default {
   height: 25%;
 
   padding-bottom: 100px;
-
 }
 
 img#logo,
